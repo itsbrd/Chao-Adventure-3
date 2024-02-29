@@ -1,16 +1,38 @@
-import "CoreLibs/object"
+
 import "CoreLibs/graphics"
+
+import "CoreLibs/object"
+
 import "CoreLibs/sprites"
+
+import "CoreLibs/nineslice"
+
 import "CoreLibs/timer"
 
-local gfx = playdate.graphics
+import "CoreLibs/graphics"
+
+import "CoreLibs/ui"
+
+import "CoreLibs/animation"
+
+import "CoreLibs/animator"
+
+import "CoreLibs/crank"
+
+local gfx <const> = playdate.graphics
 local start = 0
+local timer = 0
+local on = false
+local stepInc = 0
+
 
 x = 2760
 y = 1278
 onStartScreen=0
 sideX = 200
 sideY = 486
+talk=0
+chat=false
 
 
 local menu = playdate.getSystemMenu()
@@ -36,8 +58,7 @@ end
 
 function startScreen()
   dbm:moveTo(x-4950,y)
-
-  playdate.timer.performAfterDelay(0000, addGrid)
+  addGrid()
 end
 
 function addMail()
@@ -61,50 +82,104 @@ function addGrid()
   grid:add() --adds the sprite to the display list
 
   addSides()
-  addMail()
-  walkNormal2()
+  on=true
 end
 
-function walkLeft()
-  dbm:moveTo(x+100,y)
-  side:moveTo(sideX,sideY)
-  playdate.timer.performAfterDelay(500, walkNormal)
+function drawText()
+  gfx.drawText("Amount: ", 100, 100)
 end
 
-function walkNormal()
-  dbm:moveTo(x,y)
-  side:moveTo(sideX,sideY-244)
-  playdate.timer.performAfterDelay(500, walkRight)
+function addChatBox()
+  local chatBox_image = gfx.image.new('chatBox.png')
+  chatBox = gfx.sprite.new( chatBox_image )
+  chatBox:moveTo(200,80)
+  chatBox:add() --adds the sprite to the display list
+  chat=true
 end
 
-function walkRight()
-dbm:moveTo(x-100,y)
-side:moveTo(sideX,sideY-488)
-playdate.timer.performAfterDelay(500, walkNormal2)
+function removeChatBox()
+  chatBox:moveTo(999,80)
+  chat=false
 end
 
-function walkNormal2()
-dbm:moveTo(x,y)
-side:moveTo(sideX,sideY-732)
-playdate.timer.performAfterDelay(500, walkLeft)
+
+function addTextBox()
+
 end
 
-function connect()
-  local attempt_image = gfx.image.new('dd.png')
-  attempt = gfx.sprite.new( attempt_image )
-  attempt:moveTo(100,120)
-  attempt:add()
+function walkingLogic()
+  if timer % 20 == 0 then
+    if stepInc == 0 then
+      x=x+100
+      dbm:moveTo(x,y)
+      side:moveTo(sideX,sideY)
+      stepInc = stepInc + 1
+    elseif stepInc == 1 then
+      x=x-100
+      dbm:moveTo(x,y)
+      side:moveTo(sideX,sideY-244)
+      stepInc = stepInc + 1
+    elseif stepInc == 2 then
+      x=x-100
+      dbm:moveTo(x,y)
+      side:moveTo(sideX,sideY-488)
+      stepInc = stepInc + 1
+    elseif stepInc == 3 then
+      x=x+100
+      dbm:moveTo(x,y)
+      side:moveTo(sideX,sideY-732)
+      stepInc = 0
+    end
+  end
 end
+
+function mailLogic()
+  if timer==00 then
+    addMail()
+  end
+end
+
 
 function playdate.update()
 
+  if playdate.buttonJustPressed(playdate.kButtonA) and talk==0 and mail~=nil then
+    grid:moveTo(300,200)
+    x=x+97
+    y=y-28
+    sideX=sideX+999
+    sideY=sideY+999
+    talk=1
+    timer=20
+    mail:remove()
+    addChatBox()
+  elseif playdate.buttonJustPressed(playdate.kButtonA) and talk==1 then
+    grid:moveTo(200,120)
+    x=x-97
+    y=y+28
+    sideX=sideX-999
+    sideY=sideY-999
+    talk=0
+    timer=20
+    removeChatBox()
+  end
 
+  if on==true then
+    walkingLogic()
+    mailLogic()
+    timer = timer + 1
+    print (timer)
+  end
+
+  
   gfx.sprite.update() -- need to update and render your sprites
+  if chat==true then
+    drawText()
+  elseif chat==false then
+  gfx.drawText("", 100, 100)
+  end
 
   if start==0 then
     addChaoSheet()
     start=1
   end
-
-  playdate.timer.updateTimers()
 end
